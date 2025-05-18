@@ -299,10 +299,31 @@ bot.catch((err, ctx) => {
 });
 
 // Запуск бота
-bot.launch()
-  .then(() => console.log('Бот запущен и работает'))
-  .catch(err => console.error('Ошибка запуска бота:', err));
+// Конфигурация для Render.com
+const PORT = process.env.PORT || 3000;
 
-// Грациозное завершение
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+if (process.env.RENDER) {
+  // Режим вебхука для Render
+  const webhookUrl = `https://${process.env.RENDER_SERVICE_NAME}.onrender.com/webhook`;
+  
+  bot.telegram.setWebhook(webhookUrl)
+    .then(() => {
+      console.log(`Webhook установлен на ${webhookUrl}`);
+      return bot.launch({
+        webhook: {
+          domain: webhookUrl,
+          port: PORT
+        }
+      });
+    })
+    .then(() => console.log('Бот запущен в вебхук-режиме'))
+    .catch(err => console.error('Ошибка запуска:', err));
+} else {
+  // Локальный режим с поллингом
+  bot.launch()
+    .then(() => console.log('Бот запущен в поллинг-режиме'))
+    .catch(err => console.error('Ошибка запуска:', err));
+
+  process.once('SIGINT', () => bot.stop('SIGINT'));
+  process.once('SIGTERM', () => bot.stop('SIGTERM'));
+}
