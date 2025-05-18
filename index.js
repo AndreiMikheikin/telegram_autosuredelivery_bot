@@ -303,15 +303,24 @@ bot.catch((err, ctx) => {
 const PORT = process.env.PORT || 3000;
 
 if (process.env.RENDER) {
-  // Режим вебхука для Render
-  const webhookUrl = `https://${process.env.RENDER_SERVICE_NAME}.onrender.com/webhook`;
-  
-  bot.telegram.setWebhook(webhookUrl)
+  const webhookPath = '/webhook';
+  const domain = `https://${process.env.RENDER_SERVICE_NAME}.onrender.com`;
+  const webhookUrl = domain + webhookPath;
+
+  bot.telegram.getWebhookInfo()
+    .then(info => {
+      if (info.url !== webhookUrl) {
+        console.log(`Устанавливаю новый webhook: ${webhookUrl}`);
+        return bot.telegram.setWebhook(webhookUrl);
+      } else {
+        console.log(`Webhook уже установлен: ${webhookUrl}`);
+      }
+    })
     .then(() => {
-      console.log(`Webhook установлен на ${webhookUrl}`);
       return bot.launch({
         webhook: {
-          domain: webhookUrl,
+          domain,
+          hookPath: webhookPath,
           port: PORT
         }
       });
